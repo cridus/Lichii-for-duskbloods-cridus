@@ -7,10 +7,10 @@ on:
         description: Publish the binaries as a GitHub release
         type: boolean
         default: true
-      nsight_aftermath:
-        description: Build Windows with Nsight Aftermath GPU crash dumps (test builds only, no NVIDIA files shipped)
-        type: boolean
-        default: false
+#      nsight_aftermath:
+#        description: Build Windows with Nsight Aftermath GPU crash dumps (test builds only, no NVIDIA files shipped)
+#        type: boolean
+#        default: false
   push:
     branches:
       - nx2-experimental
@@ -52,11 +52,11 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Refuse to publish an Aftermath build
-        if: inputs.nsight_aftermath && inputs.publish_release
-        run: |
-          echo "nsight_aftermath builds are test builds; run them with publish_release=false"
-          exit 1
+#      - name: Refuse to publish an Aftermath build
+#        if: inputs.nsight_aftermath && inputs.publish_release
+#        run: |
+#          echo "nsight_aftermath builds are test builds; run them with publish_release=false"
+#          exit 1
 
       - name: Prepare release tag
         if: github.event_name == 'push' || inputs.publish_release
@@ -90,30 +90,30 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: linux-x86_64
-            runner: ubuntu-24.04
+#          - platform: linux-x86_64
+#            runner: ubuntu-24.04
           # The Linux -pgo builds are the same programs compiled by clang against the repo's
           # eglantine.profdata. Eden's profile (Eden-CI/PGO) comes from Switch 1 games: with it Mario
           # Kart World ran at about half the speed of the normal build, with eglantine.profdata at
           # about the same speed. Both Windows builds are clang-cl with ThinLTO; windows-x86_64-pgo
           # adds lichii-windows.profdata, an MSVC-ABI profile trained on Ocarina of Time (see
           # docs/CI.md). MSVC still builds for development.
-          - platform: linux-x86_64-pgo
-            runner: ubuntu-24.04
-            pgo: true
-          - platform: windows-x86_64
-            runner: windows-2022
+#          - platform: linux-x86_64-pgo
+#            runner: ubuntu-24.04
+#            pgo: true
+#          - platform: windows-x86_64
+#            runner: windows-2022
           - platform: windows-x86_64-pgo
             runner: windows-2022
             pgo: true
             profile: lichii-windows.profdata
-          - platform: linux-aarch64
-            runner: ubuntu-24.04-arm
-          - platform: linux-aarch64-pgo
-            runner: ubuntu-24.04-arm
-            pgo: true
-          - platform: macos-arm64
-            runner: macos-15
+#          - platform: linux-aarch64
+#            runner: ubuntu-24.04-arm
+#          - platform: linux-aarch64-pgo
+#            runner: ubuntu-24.04-arm
+#            pgo: true
+#          - platform: macos-arm64
+#            runner: macos-15
 
     steps:
       - name: Check out source
@@ -256,23 +256,23 @@ jobs:
 
       # Only the SDK's headers are kept: the tracker loads GFSDK_Aftermath_Lib.x64.dll at run time,
       # so the tester supplies his own copy and the artifact holds no NVIDIA files.
-      - name: Fetch Nsight Aftermath SDK headers
-        if: startsWith(matrix.platform, 'windows') && inputs.nsight_aftermath
-        shell: pwsh
-        run: |
-          $zip = Join-Path $env:RUNNER_TEMP 'aftermath-sdk.zip'
-          Invoke-WebRequest -OutFile $zip https://developer.nvidia.com/downloads/assets/tools/secure/nsight-aftermath-sdk/2026_3_0/windows_x64/NVIDIA_Nsight_Aftermath_SDK_2026.3.0.26197-windows_x64.zip
-          $hash = (Get-FileHash -Algorithm SHA256 $zip).Hash.ToLowerInvariant()
-          if ($hash -ne 'e38136a60110199559b7365d3ea4ec0cb5588dc2b0f593877d864e0299659a3f') {
-            throw "Nsight Aftermath SDK hash $hash does not match the pinned release"
-          }
-          $extracted = Join-Path $env:RUNNER_TEMP 'aftermath-sdk-zip'
-          Expand-Archive $zip -DestinationPath $extracted
-          $sdk = Join-Path $env:RUNNER_TEMP 'aftermath-sdk'
-          New-Item -ItemType Directory -Force $sdk | Out-Null
-          Move-Item (Join-Path $extracted 'include') $sdk
-          Remove-Item -Recurse -Force $extracted, $zip
-          "NSIGHT_AFTERMATH_SDK=$($sdk -replace '\\', '/')" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+#      - name: Fetch Nsight Aftermath SDK headers
+#        if: startsWith(matrix.platform, 'windows') && inputs.nsight_aftermath
+#        shell: pwsh
+#        run: |
+#          $zip = Join-Path $env:RUNNER_TEMP 'aftermath-sdk.zip'
+#          Invoke-WebRequest -OutFile $zip https://developer.nvidia.com/downloads/assets/tools/secure/nsight-aftermath-sdk/2026_3_0/windows_x64/NVIDIA_Nsight_Aftermath_SDK_2026.3.0.26197-windows_x64.zip
+#          $hash = (Get-FileHash -Algorithm SHA256 $zip).Hash.ToLowerInvariant()
+#          if ($hash -ne 'e38136a60110199559b7365d3ea4ec0cb5588dc2b0f593877d864e0299659a3f') {
+#            throw "Nsight Aftermath SDK hash $hash does not match the pinned release"
+#          }
+#          $extracted = Join-Path $env:RUNNER_TEMP 'aftermath-sdk-zip'
+#          Expand-Archive $zip -DestinationPath $extracted
+#          $sdk = Join-Path $env:RUNNER_TEMP 'aftermath-sdk'
+#          New-Item -ItemType Directory -Force $sdk | Out-Null
+#          Move-Item (Join-Path $extracted 'include') $sdk
+#          Remove-Item -Recurse -Force $extracted, $zip
+#          "NSIGHT_AFTERMATH_SDK=$($sdk -replace '\\', '/')" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
 
       - name: Restore CPM downloads
         id: cpm-cache
@@ -350,11 +350,12 @@ jobs:
             flags+=" -Wno-error=profile-instr-out-of-date -Wno-error=profile-instr-unprofiled"
             flags+=" -Wno-error=backend-plugin"
           fi
-          aftermath=()
-          if [ '${{ inputs.nsight_aftermath }}' = true ]; then
-            aftermath=(-DENABLE_NSIGHT_AFTERMATH=ON)
-          fi
-          cmake -S . -B build/release -G Ninja "${aftermath[@]}" \
+          # aftermath=()
+          # if [ '${{ inputs.nsight_aftermath }}' = true ]; then
+          #   aftermath=(-DENABLE_NSIGHT_AFTERMATH=ON)
+          # fi
+          # cmake -S . -B build/release -G Ninja "${aftermath[@]}" \
+          cmake -S . -B build/release -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_TESTING=OFF \
             -DLICHII_TESTS=OFF \
@@ -634,7 +635,8 @@ jobs:
         if: startsWith(matrix.platform, 'windows')
         uses: actions/upload-artifact@v7
         with:
-          name: lichii-${{ matrix.platform }}${{ inputs.nsight_aftermath && '-aftermath' || '' }}-${{ github.sha }}
+#          name: lichii-${{ matrix.platform }}${{ inputs.nsight_aftermath && '-aftermath' || '' }}-${{ github.sha }}
+          name: lichii-${{ matrix.platform }}-${{ github.sha }}
           path: build/release/bin/
           if-no-files-found: error
           retention-days: 7
@@ -643,7 +645,8 @@ jobs:
         if: startsWith(matrix.platform, 'windows')
         uses: actions/upload-artifact@v7
         with:
-          name: symbols-${{ matrix.platform }}${{ inputs.nsight_aftermath && '-aftermath' || '' }}-${{ github.sha }}
+#          name: symbols-${{ matrix.platform }}${{ inputs.nsight_aftermath && '-aftermath' || '' }}-${{ github.sha }}
+          name: symbols-${{ matrix.platform }}-${{ github.sha }}
           path: build/release/symbols/
           if-no-files-found: error
           retention-days: 90
@@ -761,15 +764,6 @@ jobs:
           cat > notes.md <<EOF
           Automatic build of \`${GITHUB_REF_NAME}\` at ${GITHUB_SHA}.
 
-          ## Linux
-
-          Linux packages come as an AppImage and a tar.gz. Both are self-contained and need glibc 2.39 or newer (Ubuntu 24.04, Fedora 40, Debian 13, Arch). The tar.gz holds the same files unpacked, for systems without FUSE: extract it and run \`lichii/lichii\`.
-
-          $({
-            row amd64 "$(appimage_tar lichii-linux-x86_64)" "$(appimage_tar lichii-linux-x86_64-pgo)" "Make the AppImage executable (\`chmod +x\`) and run it"
-            row "ARM (aarch64)" "$(appimage_tar lichii-linux-aarch64)" "$(appimage_tar lichii-linux-aarch64-pgo)" ""
-          } | table)
-
           ## Windows
 
           Windows packages are in-place zip files: extract and run \`lichii.exe\`, or \`eden-cli.exe\` from a terminal.
@@ -777,10 +771,6 @@ jobs:
           $({
             row "amd64 / x86_64" "$(link zip lichii-windows-x86_64.zip)" "$(link "PGO zip" lichii-windows-x86_64-pgo.zip)" "Both built with clang-cl and ThinLTO; the PGO zip adds a profile trained on Ocarina of Time"
           } | table)
-
-          ## macOS
-
-          $(row "arm64 (Apple Silicon)" "$(link zip lichii-macos-arm64.zip)" "" "macOS 15 or newer. Not notarized: right-click and choose Open the first time, or run \`xattr -dr com.apple.quarantine lichii.app\`. \`eden-cli\` is inside the app, in \`Contents/MacOS\`" | table)
 
           ${pgo_note}
           EOF
