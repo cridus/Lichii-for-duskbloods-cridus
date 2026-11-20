@@ -1088,7 +1088,7 @@ MemoryManager::GetSubmappedRange(GPUVAddr gpu_addr, std::size_t size) const {
 }
 
 boost::container::small_vector<std::pair<DAddr, std::size_t>, 32>
-MemoryManager::GetSubmappedDeviceRangeUncached(GPUVAddr gpu_addr, std::size_t size) const {
+MemoryManager::GetSubmappedDeviceRange(GPUVAddr gpu_addr, std::size_t size) const {
     boost::container::small_vector<std::pair<DAddr, std::size_t>, 32> result{};
     if (!IsWithinGPUAddressRange(gpu_addr)) {
         return result;
